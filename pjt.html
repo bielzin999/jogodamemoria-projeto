@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Memória</title>
+  <style>
+      body {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          height: 100vh;
+          background-color: #f0f0f0;
+          font-family: Arial, sans-serif;
+      }
+      .sidebar {
+          width: 200px;
+          padding: 20px;
+          background-color: #4CAF50;
+          color: white;
+          text-align: center;
+          border-radius: 8px;
+          margin: 20px;
+      }
+      h1 {
+          text-align: center;
+          margin-bottom: 20px;
+      }
+      .game-board {
+          display: grid;
+          grid-template-columns: repeat(4, 100px);
+          grid-gap: 10px;
+          margin: 20px;
+      }
+      .card {
+          width: 100px;
+          height: 100px;
+          background-color: #4CAF50;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 24px;
+          color: white;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: transform 0.2s;
+      }
+      .card.flipped {
+          background-color: #fff;
+          color: #000;
+          transform: rotateY(180deg);
+      }
+      .message {
+          margin-top: 20px;
+          font-size: 24px;
+          color: #333;
+          display: none; /* Inicialmente escondido */
+      }
+      button {
+          margin-top: 20px;
+          padding: 10px 20px;
+          font-size: 16px;
+          cursor: pointer;
+      }
+      .difficulty-selection {
+          text-align: center;
+      }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+      <h2>Instruções</h2>
+      <p>Memorize as cartas e encontre os pares!</p>
+  </div>
+
+  <div>
+      <h1>Jogo de Memória</h1>
+      <div class="difficulty-selection">
+          <h2>Escolha o Nível de Dificuldade</h2>
+          <button onclick="startGame('easy')">Fácil</button>
+          <button onclick="startGame('medium')">Médio</button>
+          <button onclick="startGame('hard')">Difícil</button>
+      </div>
+      <div class="game-board" id="gameBoard"></div>
+      <div class="message" id="winMessage">Você ganhou!</div>
+      <button id="restartButton" style="display: none;">Reiniciar Jogo</button>
+  </div>
+
+  <div class="sidebar">
+      <h2>Sobre</h2>
+      <p>Jogo de memória simples para treinar sua memória!</p>
+  </div>
+
+  <script>
+      let cards = [];
+      let cardValues = [];
+      let cardIds = [];
+      let matchedCards = [];
+      let level = 'easy'; // Nível padrão
+
+      function startGame(selectedLevel) {
+          level = selectedLevel;
+          switch (level) {
+              case 'easy':
+                  cards = ['🍎', '🍌', '🍒', '🍇', '🍎', '🍌', '🍒', '🍇'];
+                  break;
+              case 'medium':
+                  cards = ['🍎', '🍌', '🍒', '🍇', '🍊', '🍉', '🍓', '🍍', 
+                           '🍎', '🍌', '🍒', '🍇', '🍊', '🍉', '🍓', '🍍'];
+                  break;
+              case 'hard':
+                  cards = ['🍎', '🍌', '🍒', '🍇', '🍊', '🍉', '🍓', '🍍',
+                           '🍉', '🍇', '🍋', '🍈', '🍒', '🍑', '🍊', '🍍', 
+                           '🍎', '🍌', '🍒', '🍇'];
+                  break;
+          }
+          createBoard();
+      }
+
+      function createBoard() {
+          matchedCards = []; // Resetar cartas combinadas
+          cardValues = [];
+          cardIds = [];
+          const gameBoard = document.getElementById('gameBoard');
+          gameBoard.innerHTML = ''; // Limpar o tabuleiro
+
+          const shuffledCards = shuffle(cards.slice()); // Embaralhar cartas
+
+          shuffledCards.forEach((card, index) => {
+              const cardElement = document.createElement('div');
+              cardElement.setAttribute('data-id', index);
+              cardElement.classList.add('card');
+              cardElement.addEventListener('click', flipCard);
+              gameBoard.appendChild(cardElement);
+          });
+
+          // Mostrar as cartas por 3 segundos
+          setTimeout(() => {
+              const allCards = document.querySelectorAll('.card');
+              allCards.forEach((card, index) => {
+                  card.textContent = shuffledCards[index];
+                  card.classList.add('flipped');
+              });
+
+              // Virar as cartas após 3 segundos
+              setTimeout(() => {
+                  allCards.forEach(card => {
+                      card.textContent = '';
+                      card.classList.remove('flipped');
+                  });
+              }, 3000);
+          }, 100); // Pequeno delay para garantir que as cartas sejam mostradas corretamente
+      }
+
+      function flipCard() {
+          const selected = this;
+          const cardId = selected.getAttribute('data-id');
+          if (cardValues.length < 2 && !selected.classList.contains('flipped')) {
+              selected.textContent = cards[cardId];
+              selected.classList.add('flipped');
+
+              cardValues.push(cards[cardId]);
+              cardIds.push(cardId);
+
+              if (cardValues.length === 2) {
+                  setTimeout(checkMatch, 500);
+              }
+          }
+      }
+
+      function checkMatch() {
+          const cards = document.querySelectorAll('.card');
+          const [firstCardId, secondCardId] = cardIds;
+
+          if (cardValues[0] === cardValues[1] && firstCardId !== secondCardId) {
+              matchedCards.push(cardValues);
+          } else {
+              cards[firstCardId].textContent = '';
+              cards[secondCardId].textContent = '';
+              cards[firstCardId].classList.remove('flipped');
+              cards[secondCardId].classList.remove('flipped');
+          }
+
+          cardValues = [];
+          cardIds = [];
+
+          if (matchedCards.length === cards.length / 2) {
+              document.getElementById('winMessage').style.display = 'block'; // Mostrar mensagem de vitória
+              document.getElementById('restartButton').style.display = 'block'; // Mostrar botão de reiniciar
+          }
+      }
+
+      function shuffle(array) {
+          for (let i = array.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [array[i], array[j]] = [array[j], array[i]];
+          }
+          return array;
+      }
+
+      document.getElementById('restartButton').addEventListener('click', () => {
+          document.getElementById('winMessage').style.display = 'none'; // Esconder mensagem de vitória
+          document.getElementById('restartButton').style.display = 'none'; // Esconder botão de reiniciar
+          createBoard(); // Reiniciar o jogo
+      });
+  </script>
+</body>
+</html>
